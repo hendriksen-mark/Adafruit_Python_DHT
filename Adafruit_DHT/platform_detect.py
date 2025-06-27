@@ -31,15 +31,19 @@ import re
 UNKNOWN          = 0
 RASPBERRY_PI     = 1
 BEAGLEBONE_BLACK = 2
+ORANGE_PI        = 3
 
 
 def platform_detect():
-    """Detect if running on the Raspberry Pi or Beaglebone Black and return the
-    platform type.  Will return RASPBERRY_PI, BEAGLEBONE_BLACK, or UNKNOWN."""
-    # Handle Raspberry Pi
+    """Detect if running on the Raspberry Pi, Beaglebone Black or Orange Pi and return the
+    platform type.  Will return RASPBERRY_PI, BEAGLEBONE_BLACK, ORANGE_PI or UNKNOWN."""
+    # Handle Raspberry Pi and Orange Pi
     pi = pi_version()
     if pi is not None:
         return RASPBERRY_PI
+    opi = opi_version()
+    if opi is not None:
+        return ORANGE_PI
 
     # Handle Beaglebone Black
     # TODO: Check the Beaglebone Black /proc/cpuinfo value instead of reading
@@ -77,41 +81,89 @@ def pi_revision():
         raise RuntimeError('Could not determine Raspberry Pi revision.')
 
 
-def pi_version():
-    """Detect the version of the Raspberry Pi.  Returns either 1, 2, 3 or
-    None depending on if it's a Raspberry Pi 1 (model A, B, A+, B+),
-    Raspberry Pi 2 (model B+), Raspberry Pi 3,Raspberry Pi 3 (model B+), Raspberry Pi 4
-    or not a Raspberry Pi.
+def opi_version():
+    """Detect the version of the Orange Pi.  Returns either 1 or None
+    depending on if it's an Orange Pi Zero 2 or not an Orange Pi.
+    Note: This function currently only detects the Orange Pi Zero 2.
+    If you need to detect other Orange Pi models, you can extend this function.
+    Returns 1 for Orange Pi Zero 2, None for other models or if not an Orange Pi.
     """
-    # Check /proc/cpuinfo for the Hardware field value.
-    # 2708 is pi 1
-    # 2709 is pi 2
-    # 2835 is pi 3 or pi 4
-    # 2837 is pi 3b+
-    # Anything else is not a pi.
-    with open('/proc/cpuinfo', 'r') as infile:
-        cpuinfo = infile.read()
+    try:
+        with open('/proc/device-tree/model', 'r') as infile:
+            model = infile.read().strip()
+        if model == 'OrangePi Zero2':
+            # Orange Pi Zero 2
+            return 1
+    except (IOError, OSError):
+        pass
+    return None
+
+def pi_version():
+    """Detect the version of the Raspberry Pi.  Returns either 1, 2, 3, 4, or None
+    depending on if it's a Raspberry Pi 1 (model A, B, A+, B+),
+    Raspberry Pi 2 (model B+), Raspberry Pi 3, Raspberry Pi 3 (model B+), Raspberry Pi 4
+    or not a Raspberry Pi (None).
+    """
+    try:
+        # Check /proc/cpuinfo for the Hardware field value.
+        # 2708 is pi 1
+        # 2709 is pi 2
+        # 2835 is pi 3 or pi 2 (on some Pi 2 models)
+        # 2837 is pi 3b+
+        # 2711 is pi 4
+        # Anything else is not a pi.
+        with open('/proc/cpuinfo', 'r') as infile:
+            cpuinfo = infile.read()
+    except (IOError, OSError):
+        return None
+    
     # Match a line like 'Hardware   : BCM2709'
     match = re.search('^Hardware\s+:\s+(\w+)$', cpuinfo,
                       flags=re.MULTILINE | re.IGNORECASE)
-    if not match:
-        # /proc/cpuinfo on Debian 12/Bookworm doesn't even have a Hardware: line
-        return 4 # BUGBUG: awful hack (Eliot)
-    if match.group(1) == 'BCM2708':
-        # Pi 1
-        return 1
-    elif match.group(1) == 'BCM2709':
-        # Pi 2
-        return 2
-    elif match.group(1) == 'BCM2835':
-        # Pi 3 or Pi 4
-        return 3
-    elif match.group(1) == 'BCM2837':
-        # Pi 3b+
-        return 3
-    elif match.group(1) == 'BCM2711':
-        # Pi 4B (this would work if /proc/cpuinfo format hadn't completely changed)
-        return 4
+    if match:
+        # We have a Hardware field, use it for detection
+        if match.group(1) == 'BCM2708':
+            # Pi 1
+            return 1
+        elif match.group(1) == 'BCM2709':
+            # Pi 2
+            return 2
+        elif match.group(1) == 'BCM2835':
+            # Could be Pi 3 or Pi 2 (some Pi 2 models report BCM2835)
+            # Check Model field to distinguish
+            model_match = re.search('^Model\s+:\s+(.+)$', cpuinfo,
+                                  flags=re.MULTILINE | re.IGNORECASE)
+            if model_match and 'Pi 2' in model_match.group(1):
+                return 2
+            else:
+                return 3
+        elif match.group(1) == 'BCM2837':
+            # Pi 3b+
+            return 3
+        elif match.group(1) == 'BCM2711':
+            # Pi 4B
+            return 4
+        else:
+            # Something else, not a pi
+            return None
     else:
-        # Something else, not a pi.
-        return None
+        # No Hardware field, try to match Model line for newer Pi models (like Pi 4)
+        match = re.search('^Model\s+:\s+(.+)$', cpuinfo,
+                      flags=re.MULTILINE | re.IGNORECASE)
+        if match:
+            # Check if it's a Raspberry Pi 4
+            if 'Raspberry Pi' in match.group(1):
+                # Try to extract version from model string
+                if 'Pi 2' in match.group(1):
+                    return 2
+                elif 'Pi 3' in match.group(1):
+                    return 3
+                elif 'Pi 4' in match.group(1):
+                    return 4
+                else:
+                    return 1  # Assume Pi 1 as fallback
+            else:
+                # Not a recognized Raspberry Pi model
+                return None
+        else:
+            return None

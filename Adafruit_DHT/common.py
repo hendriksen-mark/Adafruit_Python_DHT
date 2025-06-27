@@ -59,6 +59,9 @@ def get_platform():
     elif plat == platform_detect.BEAGLEBONE_BLACK:
         from . import Beaglebone_Black
         return Beaglebone_Black
+    elif plat == platform_detect.ORANGE_PI:
+        from . import Orange_Pi
+        return Orange_Pi
     else:
         raise RuntimeError('Unknown platform.')
 

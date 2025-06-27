@@ -44,12 +44,16 @@ elif '--force-bbb' in sys.argv:
 elif '--force-test' in sys.argv:
     platform = 'TEST'
     sys.argv.remove('--force-test')
+elif '--force-opi' in sys.argv:
+    platform = platform_detect.ORANGE_PI
+    sys.argv.remove('--force-opi')
 else:
     # No explicit platform chosen, detect the current platform.
     platform = platform_detect.platform_detect()
 
 # Pick the right extension to compile based on the platform.
 extensions = []
+install_requires = []
 if not is_binary_install():
     print('Skipped loading platform-specific extensions for Adafruit_DHT (we are generating a cross-platform source distribution).')
 elif platform == platform_detect.RASPBERRY_PI:
@@ -79,12 +83,14 @@ elif platform == platform_detect.BEAGLEBONE_BLACK:
                                 ["source/_Beaglebone_Black_Driver.c", "source/common_dht_read.c", "source/Beaglebone_Black/bbb_dht_read.c", "source/Beaglebone_Black/bbb_mmio.c"],
                                 libraries=['rt'],
                                 extra_compile_args=['-std=gnu99']))
+elif platform == platform_detect.ORANGE_PI:
+    install_requires.append('OPi.GPIO')
 elif platform == 'TEST':
     extensions.append(Extension("Adafruit_DHT.Test_Driver",
                                 ["source/_Test_Driver.c", "source/Test/test_dht_read.c"],
                                 extra_compile_args=['-std=gnu99']))
 else:
-    print('Could not detect if running on the Raspberry Pi or Beaglebone Black.  If this failure is unexpected, you can run again with --force-pi or --force-bbb parameter to force using the Raspberry Pi or Beaglebone Black respectively.')
+    print('Could not detect if running on the Raspberry Pi, Beaglebone Black or Orange Pi. If this failure is unexpected, you can run again with --force-pi, --force-bbb or --force-opi parameter to force using the Raspberry Pi, Beaglebone Black or Orange Pi respectively.')
     sys.exit(1)
 
 classifiers = ['Development Status :: 4 - Beta',
@@ -101,10 +107,11 @@ setup(name              = 'Adafruit_DHT',
       version           = '1.4.0',
       author            = 'Tony DiCola',
       author_email      = 'tdicola@adafruit.com',
-      description       = 'Library to get readings from the DHT11, DHT22, and AM2302 humidity and temperature sensors on a Raspberry Pi or Beaglebone Black.',
+      description       = 'Library to get readings from the DHT11, DHT22, and AM2302 humidity and temperature sensors on a Raspberry Pi, Beaglebone Black, or Orange Pi.',
       long_description  = read('README.md'),
       license           = 'MIT',
       classifiers       = classifiers,
       url               = 'https://github.com/adafruit/Adafruit_Python_DHT/',
       packages          = find_packages(),
+      install_requires  = install_requires,
       ext_modules       = extensions)
