@@ -41,12 +41,12 @@ elif '--force-pi2' in sys.argv:
 elif '--force-bbb' in sys.argv:
     platform = platform_detect.BEAGLEBONE_BLACK
     sys.argv.remove('--force-bbb')
-elif '--force-test' in sys.argv:
-    platform = 'TEST'
-    sys.argv.remove('--force-test')
 elif '--force-opi' in sys.argv:
     platform = platform_detect.ORANGE_PI
     sys.argv.remove('--force-opi')
+elif '--force-test' in sys.argv:
+    platform = 'TEST'
+    sys.argv.remove('--force-test')
 else:
     # No explicit platform chosen, detect the current platform.
     platform = platform_detect.platform_detect()
@@ -84,7 +84,7 @@ elif platform == platform_detect.BEAGLEBONE_BLACK:
                                 libraries=['rt'],
                                 extra_compile_args=['-std=gnu99']))
 elif platform == platform_detect.ORANGE_PI:
-    install_requires.append('OPi.GPIO')
+    pass  # Orange Pi does not need a C extension, it uses pure Python code with OPi.GPIO
 elif platform == 'TEST':
     extensions.append(Extension("Adafruit_DHT.Test_Driver",
                                 ["source/_Test_Driver.c", "source/Test/test_dht_read.c"],
@@ -101,6 +101,11 @@ classifiers = ['Development Status :: 4 - Beta',
                'Programming Language :: Python :: 3',
                'Topic :: Software Development',
                'Topic :: System :: Hardware']
+
+# Determine install requirements based on platform
+install_requires = []
+if platform == platform_detect.ORANGE_PI:
+    install_requires.append('OPi.GPIO')
 
 # Call setuptools setup function to install package.
 setup(name              = 'Adafruit_DHT',
