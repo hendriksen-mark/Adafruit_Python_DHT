@@ -22,7 +22,7 @@ from . import common
 import time
 import OPi.GPIO as GPIO
 
-GPIO.setboard(GPIO.THREE)
+#GPIO.setboard(GPIO.THREE)
 GPIO.setmode(GPIO.BOARD)
 
 
