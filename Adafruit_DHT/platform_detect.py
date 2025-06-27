@@ -90,7 +90,7 @@ def opi_version():
     """
     try:
         with open('/proc/device-tree/model', 'r') as infile:
-            model = infile.read().strip()
+            model = infile.read().strip().rstrip('\x00')
         if model == 'OrangePi Zero2':
             # Orange Pi Zero 2
             return 1
