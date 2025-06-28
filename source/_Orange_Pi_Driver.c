@@ -20,10 +20,10 @@
 // SOFTWARE.
 #include <Python.h>
 
-#include "Orange_Pi_Zero_2/opi_dht_read.h"
+#include "Orange_Pi/opi_dht_read.h"
 
 // Wrap calling dht_read function and expose it as a DHT.read Python module & function.
-static PyObject* Orange_Pi_Zero_2_Driver_read(PyObject *self, PyObject *args)
+static PyObject* Orange_Pi_Driver_read(PyObject *self, PyObject *args)
 {
 	// Parse sensor and pin integer arguments.
     int sensor, pin;
@@ -39,14 +39,14 @@ static PyObject* Orange_Pi_Zero_2_Driver_read(PyObject *self, PyObject *args)
 // Boilerplate python module method list and initialization functions below.
 
 static PyMethodDef module_methods[] = {
-    {"read", Orange_Pi_Zero_2_Driver_read, METH_VARARGS, "Read DHT sensor value on a Orange Pi Zero 2."},
+    {"read", Orange_Pi_Driver_read, METH_VARARGS, "Read DHT sensor value on a Orange Pi Zero 2."},
     {NULL, NULL, 0, NULL}
 };
 
 #if PY_MAJOR_VERSION > 2
 static struct PyModuleDef pi2_dht_module = {
     PyModuleDef_HEAD_INIT,
-    "Orange_Pi_Zero_2_Driver",   // name of module
+    "Orange_Pi_Driver",   // name of module
     NULL,                      // module documentation, may be NULL
     -1,                        // size of per-interpreter state of the module, or -1 if the module keeps state in global variables.
     module_methods
@@ -54,15 +54,15 @@ static struct PyModuleDef pi2_dht_module = {
 #endif
 
 #if PY_MAJOR_VERSION > 2
-PyMODINIT_FUNC PyInit_Orange_Pi_Zero_2_Driver(void)
+PyMODINIT_FUNC PyInit_Orange_Pi_Driver(void)
 #else
-PyMODINIT_FUNC initOrange_Pi_Zero_2_Driver(void)
+PyMODINIT_FUNC initOrange_Pi_Driver(void)
 #endif
 {    
     #if PY_MAJOR_VERSION > 2
       PyObject* module = PyModule_Create(&pi2_dht_module);
     #else
-      Py_InitModule("Orange_Pi_Zero_2_Driver", module_methods);
+      Py_InitModule("Orange_Pi_Driver", module_methods);
     #endif
 
     #if PY_MAJOR_VERSION > 2
