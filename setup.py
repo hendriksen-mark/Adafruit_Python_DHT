@@ -108,12 +108,16 @@ classifiers = ['Development Status :: 4 - Beta',
 # Determine install requirements based on platform
 install_requires = []
 
+# Add platform-specific dependencies
+if platform == platform_detect.ORANGE_PI:
+    install_requires.append('gpiod>=1.5.0')  # Required for Orange Pi GPIO control
+
 # Call setuptools setup function to install package.
 setup(name              = 'Adafruit_DHT',
       version           = '1.4.0',
       author            = 'Tony DiCola',
       author_email      = 'tdicola@adafruit.com',
-      description       = 'Library to get readings from the DHT11, DHT22, and AM2302 humidity and temperature sensors on a Raspberry Pi, Beaglebone Black, or Orange Pi.',
+      description       = 'Library to get readings from the DHT11, DHT22, and AM2302 humidity and temperature sensors on a Raspberry Pi, Beaglebone Black, or Orange Pi. Enhanced with gpiod support for Orange Pi Zero 2.',
       long_description  = read('README.md'),
       license           = 'MIT',
       classifiers       = classifiers,
