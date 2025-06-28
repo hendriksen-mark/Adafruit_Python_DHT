@@ -28,15 +28,15 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "o_pi_z_2_mmio.h"
+#include "opi_mmio.h"
 
 #define GPIO_BASE_OFFSET 0x200000
 #define GPIO_LENGTH 4096
 
-volatile uint32_t* o_pi_z_2_mmio_gpio = NULL;
+volatile uint32_t* opi_mmio_gpio = NULL;
 
-int o_pi_z_2_mmio_init(void) {
-  if (o_pi_z_2_mmio_gpio == NULL) {
+int opi_mmio_init(void) {
+  if (opi_mmio_gpio == NULL) {
     // Check for GPIO and peripheral addresses from device tree.
     // Adapted from code in the RPi.GPIO library at:
     //   http://sourceforge.net/p/raspberry-gpio-python/
@@ -59,11 +59,11 @@ int o_pi_z_2_mmio_init(void) {
       return MMIO_ERROR_DEVMEM;
     }
     // Map GPIO memory to location in process space.
-    o_pi_z_2_mmio_gpio = (uint32_t*)mmap(NULL, GPIO_LENGTH, PROT_READ | PROT_WRITE, MAP_SHARED, fd, gpio_base);
+    opi_mmio_gpio = (uint32_t*)mmap(NULL, GPIO_LENGTH, PROT_READ | PROT_WRITE, MAP_SHARED, fd, gpio_base);
     close(fd);
-    if (o_pi_z_2_mmio_gpio == MAP_FAILED) {
+    if (opi_mmio_gpio == MAP_FAILED) {
       // Don't save the result if the memory mapping failed.
-      o_pi_z_2_mmio_gpio = NULL;
+      opi_mmio_gpio = NULL;
       return MMIO_ERROR_MMAP;
     }
   }

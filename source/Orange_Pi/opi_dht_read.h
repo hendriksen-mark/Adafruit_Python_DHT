@@ -18,8 +18,8 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#ifndef O_PI_Z_2_DHT_READ_H
-#define O_PI_Z_2_DHT_READ_H
+#ifndef OPI_DHT_READ_H
+#define OPI_DHT_READ_H
 
 #include "../common_dht_read.h"
 
@@ -27,6 +27,6 @@
 // returned in the provided parameters. If a successfull reading could be made a value of 0 
 // (DHT_SUCCESS) will be returned.  If there was an error reading the sensor a negative value will
 // be returned.  Some errors can be ignored and retried, specifically DHT_ERROR_TIMEOUT or DHT_ERROR_CHECKSUM.
-int o_pi_z_2_dht_read(int sensor, int pin, float* humidity, float* temperature);
+int opi_dht_read(int sensor, int pin, float* humidity, float* temperature);
 
 #endif

@@ -21,8 +21,8 @@
 // SOFTWARE.
 
 // Simple fast memory-mapped GPIO library for the Raspberry Pi.
-#ifndef O_PI_Z_2_MMIO_H
-#define O_PI_Z_2_MMIO_H
+#ifndef OPI_MMIO_H
+#define OPI_MMIO_H
 
 #include <stdint.h>
 
@@ -31,32 +31,32 @@
 #define MMIO_ERROR_MMAP -2
 #define MMIO_ERROR_OFFSET -3
 
-extern volatile uint32_t* o_pi_z_2_mmio_gpio;
+extern volatile uint32_t* opi_mmio_gpio;
 
-int o_pi_z_2_mmio_init(void);
+int opi_mmio_init(void);
 
-static inline void o_pi_z_2_mmio_set_input(const int gpio_number) {
+static inline void opi_mmio_set_input(const int gpio_number) {
   // Set GPIO register to 000 for specified GPIO number.
-  *(o_pi_z_2_mmio_gpio+((gpio_number)/10)) &= ~(7<<(((gpio_number)%10)*3));
+  *(opi_mmio_gpio+((gpio_number)/10)) &= ~(7<<(((gpio_number)%10)*3));
 }
 
-static inline void o_pi_z_2_mmio_set_output(const int gpio_number) {
+static inline void opi_mmio_set_output(const int gpio_number) {
   // First set to 000 using input function.
-  o_pi_z_2_mmio_set_input(gpio_number);
+  opi_mmio_set_input(gpio_number);
   // Next set bit 0 to 1 to set output.
-  *(o_pi_z_2_mmio_gpio+((gpio_number)/10)) |=  (1<<(((gpio_number)%10)*3));
+  *(opi_mmio_gpio+((gpio_number)/10)) |=  (1<<(((gpio_number)%10)*3));
 }
 
-static inline void o_pi_z_2_mmio_set_high(const int gpio_number) {
-  *(o_pi_z_2_mmio_gpio+7) = 1 << gpio_number;
+static inline void opi_mmio_set_high(const int gpio_number) {
+  *(opi_mmio_gpio+7) = 1 << gpio_number;
 }
 
-static inline void o_pi_z_2_mmio_set_low(const int gpio_number) {
-  *(o_pi_z_2_mmio_gpio+10) = 1 << gpio_number;
+static inline void opi_mmio_set_low(const int gpio_number) {
+  *(opi_mmio_gpio+10) = 1 << gpio_number;
 }
 
-static inline uint32_t o_pi_z_2_mmio_input(const int gpio_number) {
-  return *(o_pi_z_2_mmio_gpio+13) & (1 << gpio_number);
+static inline uint32_t opi_mmio_input(const int gpio_number) {
+  return *(opi_mmio_gpio+13) & (1 << gpio_number);
 }
 
 #endif

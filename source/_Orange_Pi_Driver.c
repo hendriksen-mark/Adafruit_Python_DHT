@@ -20,7 +20,7 @@
 // SOFTWARE.
 #include <Python.h>
 
-#include "Orange_Pi_Zero_2/o_pi_z_2_dht_read.h"
+#include "Orange_Pi_Zero_2/opi_dht_read.h"
 
 // Wrap calling dht_read function and expose it as a DHT.read Python module & function.
 static PyObject* Orange_Pi_Zero_2_Driver_read(PyObject *self, PyObject *args)
@@ -32,7 +32,7 @@ static PyObject* Orange_Pi_Zero_2_Driver_read(PyObject *self, PyObject *args)
     }
     // Call dht_read and return result code, humidity, and temperature.
     float humidity = 0, temperature = 0;
-    int result = o_pi_z_2_dht_read(sensor, pin, &humidity, &temperature);
+    int result = opi_dht_read(sensor, pin, &humidity, &temperature);
     return Py_BuildValue("iff", result, humidity, temperature);
 }
 
