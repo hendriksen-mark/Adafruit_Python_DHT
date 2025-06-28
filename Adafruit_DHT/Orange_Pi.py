@@ -22,7 +22,12 @@ from . import common
 import time
 
 # Try to import gpiod for direct GPIO access
-import gpiod # type: ignore
+try:
+    import gpiod
+    GPIOD_AVAILABLE = True
+except ImportError:
+    GPIOD_AVAILABLE = False
+    print("Debug: gpiod not available, DHT reads will fail")
 
 BOARD = {
     3:    229,   # PH5/I2C3_SDA
@@ -47,12 +52,23 @@ BOARD = {
 def _read_with_gpiod(sensor, gpio_line):
     """Read DHT sensor using gpiod library with proper DHT22 protocol"""
     
+    if not GPIOD_AVAILABLE:
+        raise RuntimeError("gpiod library not available - install with: pip3 install gpiod")
+    
     print(f"Debug: Using gpiod to read GPIO line {gpio_line}")
     
     try:
         # Open GPIO chip 1 (where our GPIO lines are)
-        chip = gpiod.Chip('gpiochip1')
-        line = chip.get_line(gpio_line)
+        try:
+            chip = gpiod.Chip('gpiochip1')
+        except (FileNotFoundError, OSError) as e:
+            raise RuntimeError(f"Cannot access gpiochip1: {e}. Check if GPIO devices exist: ls -la /dev/gpio*")
+        
+        try:
+            line = chip.get_line(gpio_line)
+        except (ValueError, OSError) as e:
+            chip.close()
+            raise RuntimeError(f"Cannot access GPIO line {gpio_line}: {e}")
         
         # DHT22 Communication Protocol:
         # 1. Send start signal: pull low for 1-10ms, then high for 20-40us
