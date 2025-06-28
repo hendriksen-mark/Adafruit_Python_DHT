@@ -84,7 +84,10 @@ elif platform == platform_detect.BEAGLEBONE_BLACK:
                                 libraries=['rt'],
                                 extra_compile_args=['-std=gnu99']))
 elif platform == platform_detect.ORANGE_PI:
-    pass  # Orange Pi does not need a C extension, it uses pure Python code with OPi.GPIO
+    extensions.append(Extension("Adafruit_DHT.Orange_Pi_Driver",
+                                ["source/_Orange_Pi_Driver.c", "source/common_dht_read.c", "source/Orange_Pi/op_dht_read.c", "source/Orange_Pi/op_mmio.c"],
+                                libraries=['rt'],
+                                extra_compile_args=['-std=gnu99']))
 elif platform == 'TEST':
     extensions.append(Extension("Adafruit_DHT.Test_Driver",
                                 ["source/_Test_Driver.c", "source/Test/test_dht_read.c"],
@@ -104,8 +107,6 @@ classifiers = ['Development Status :: 4 - Beta',
 
 # Determine install requirements based on platform
 install_requires = []
-if platform == platform_detect.ORANGE_PI:
-    install_requires.append('OPi.GPIO')
 
 # Call setuptools setup function to install package.
 setup(name              = 'Adafruit_DHT',
