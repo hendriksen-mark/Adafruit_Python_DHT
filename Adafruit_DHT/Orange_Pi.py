@@ -69,13 +69,7 @@ def _read_with_gpiod(sensor, gpio_line):
             except (FileNotFoundError, OSError) as e:
                 raise RuntimeError(f"Cannot access gpiochip1: {e}. Check if GPIO devices exist: ls -la /dev/gpio*")
         
-        try:
-            line = chip.get_line(gpio_line)
-        except (ValueError, OSError) as e:
-            chip.close()
-            raise RuntimeError(f"Cannot access GPIO line {gpio_line}: {e}")
-        
-        # DHT22 Communication Protocol:
+        # DHT22 Communication Protocol using gpiod 2.x API:
         # 1. Send start signal: pull low for 1-10ms, then high for 20-40us
         # 2. DHT responds with: low 80us, high 80us
         # 3. Data: 40 bits (5 bytes) - each bit starts with 50us low
@@ -83,71 +77,100 @@ def _read_with_gpiod(sensor, gpio_line):
         #    - 1 bit: 70us high
         
         # Step 1: Send start signal
-        line.request(consumer="dht_sensor", type=gpiod.LINE_REQ_DIR_OUT)
-        line.set_value(1)  # Initially high
-        time.sleep(0.5)   # Wait 500ms
+        try:
+            # Configure line as output
+            line_request = chip.request_lines(
+                consumer="dht_sensor",
+                config={
+                    gpio_line: gpiod.LineSettings(direction=gpiod.Line.Direction.OUTPUT)
+                }
+            )
+            
+            # Send start signal
+            line_request.set_value(gpio_line, gpiod.Line.Value.ACTIVE)  # Initially high
+            time.sleep(0.5)   # Wait 500ms
 
-        line.set_value(0)  # Pull low
-        time.sleep(0.02)  # Hold low for 20ms (>1ms required)
-        
-        #line.set_value(1)  # Release to high
-        #time.sleep(0.00004)  # Wait 40us
+            line_request.set_value(gpio_line, gpiod.Line.Value.INACTIVE)  # Pull low
+            time.sleep(0.02)  # Hold low for 20ms (>1ms required)
+            
+            # Release line request for output mode
+            line_request.release()
+            
+        except Exception as e:
+            chip.close()
+            raise RuntimeError(f"Failed to send start signal: {e}")
         
         # Step 2: Switch to input and read DHT response
-        line.release()
-        line.request(consumer="dht_sensor", type=gpiod.LINE_REQ_DIR_IN)
-        
-        # Wait for DHT to pull low (start of response)
-        timeout_start = time.time()
-        while line.get_value() == 1:
-            if time.time() - timeout_start > 0.1:  # 100ms timeout
-                #raise RuntimeError("DHT22 did not respond (no initial low)")
-                return common.DHT_ERROR_GPIO, None, None
-        
-        # Wait for DHT to go high (end of initial low pulse ~80us)
-        timeout_start = time.time()
-        while line.get_value() == 0:
-            if time.time() - timeout_start > 0.1:
-                #raise RuntimeError("DHT22 stuck low")
-                return common.DHT_ERROR_GPIO, None, None
-        
-        # Wait for DHT to go low again (end of initial high pulse ~80us)
-        timeout_start = time.time()
-        while line.get_value() == 1:
-            if time.time() - timeout_start > 0.1:
-                #raise RuntimeError("DHT22 stuck high")
-                return common.DHT_ERROR_GPIO, None, None
-
-        # Now read 40 bits of data
-        bits = []
-        for i in range(40):
-            # Wait for start of bit (low to high transition)
+        try:
+            # Configure line as input
+            line_request = chip.request_lines(
+                consumer="dht_sensor", 
+                config={
+                    gpio_line: gpiod.LineSettings(direction=gpiod.Line.Direction.INPUT)
+                }
+            )
+            
+            # Wait for DHT to pull low (start of response)
             timeout_start = time.time()
-            while line.get_value() == 0:
-                if time.time() - timeout_start > 0.001:  # 1ms timeout per bit
-                    #raise RuntimeError(f"Timeout waiting for bit {i} start")
-                    return common.DHT_ERROR_TIMEOUT, None, None
+            while line_request.get_value(gpio_line) == gpiod.Line.Value.ACTIVE:
+                if time.time() - timeout_start > 0.1:  # 100ms timeout
+                    line_request.release()
+                    chip.close()
+                    return common.DHT_ERROR_GPIO, None, None
             
-            # Measure high pulse duration
-            pulse_start = time.time()
-            while line.get_value() == 1:
-                if time.time() - pulse_start > 0.001:  # 1ms timeout
-                    #raise RuntimeError(f"Bit {i} pulse too long")
-                    return common.DHT_ERROR_TIMEOUT, None, None
+            # Wait for DHT to go high (end of initial low pulse ~80us)
+            timeout_start = time.time()
+            while line_request.get_value(gpio_line) == gpiod.Line.Value.INACTIVE:
+                if time.time() - timeout_start > 0.1:
+                    line_request.release()
+                    chip.close()
+                    return common.DHT_ERROR_GPIO, None, None
             
-            pulse_duration = time.time() - pulse_start
+            # Wait for DHT to go low again (end of initial high pulse ~80us)
+            timeout_start = time.time()
+            while line_request.get_value(gpio_line) == gpiod.Line.Value.ACTIVE:
+                if time.time() - timeout_start > 0.1:
+                    line_request.release()
+                    chip.close()
+                    return common.DHT_ERROR_GPIO, None, None
+
+            # Now read 40 bits of data
+            bits = []
+            for i in range(40):
+                # Wait for start of bit (low to high transition)
+                timeout_start = time.time()
+                while line_request.get_value(gpio_line) == gpiod.Line.Value.INACTIVE:
+                    if time.time() - timeout_start > 0.001:  # 1ms timeout per bit
+                        line_request.release()
+                        chip.close()
+                        return common.DHT_ERROR_TIMEOUT, None, None
+                
+                # Measure high pulse duration
+                pulse_start = time.time()
+                while line_request.get_value(gpio_line) == gpiod.Line.Value.ACTIVE:
+                    if time.time() - pulse_start > 0.001:  # 1ms timeout
+                        line_request.release()
+                        chip.close()
+                        return common.DHT_ERROR_TIMEOUT, None, None
+                
+                pulse_duration = time.time() - pulse_start
+                
+                # Determine if bit is 0 or 1 based on pulse duration
+                # 0 bit: ~26-28us, 1 bit: ~70us
+                # Use 50us as threshold
+                if pulse_duration > 0.00005:  # 50us
+                    bits.append(1)
+                else:
+                    bits.append(0)
             
-            # Determine if bit is 0 or 1 based on pulse duration
-            # 0 bit: ~26-28us, 1 bit: ~70us
-            # Use 50us as threshold
-            if pulse_duration > 0.00005:  # 50us
-                bits.append(1)
-            else:
-                bits.append(0)
-        
-        # Clean up
-        line.release()
-        chip.close()
+            # Clean up
+            line_request.release()
+            chip.close()
+            
+        except Exception as e:
+            line_request.release()
+            chip.close()
+            raise RuntimeError(f"Failed to read DHT response: {e}")
         
         # Convert bits to bytes
         data = []
@@ -160,7 +183,6 @@ def _read_with_gpiod(sensor, gpio_line):
         # Validate checksum
         checksum = (data[0] + data[1] + data[2] + data[3]) & 0xFF
         if checksum != data[4]:
-            #raise RuntimeError(f"DHT22 checksum error: calculated {checksum}, received {data[4]}")
             return common.DHT_ERROR_CHECKSUM, None, None
         
         # Convert to humidity and temperature
