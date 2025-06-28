@@ -60,9 +60,14 @@ def _read_with_gpiod(sensor, gpio_line):
     try:
         # Open GPIO chip 1 (where our GPIO lines are)
         try:
-            chip = gpiod.Chip('gpiochip1')
-        except (FileNotFoundError, OSError) as e:
-            raise RuntimeError(f"Cannot access gpiochip1: {e}. Check if GPIO devices exist: ls -la /dev/gpio*")
+            # Try path-based access first (more reliable)
+            chip = gpiod.Chip('/dev/gpiochip1')
+        except (FileNotFoundError, OSError):
+            try:
+                # Fallback to name-based access
+                chip = gpiod.Chip('gpiochip1')
+            except (FileNotFoundError, OSError) as e:
+                raise RuntimeError(f"Cannot access gpiochip1: {e}. Check if GPIO devices exist: ls -la /dev/gpio*")
         
         try:
             line = chip.get_line(gpio_line)
