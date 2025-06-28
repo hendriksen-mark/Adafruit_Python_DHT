@@ -85,7 +85,7 @@ elif platform == platform_detect.BEAGLEBONE_BLACK:
                                 extra_compile_args=['-std=gnu99']))
 elif platform == platform_detect.ORANGE_PI:
     extensions.append(Extension("Adafruit_DHT.Orange_Pi_Driver",
-                                ["source/_Orange_Pi_Driver.c", "source/common_dht_read.c", "source/Orange_Pi/op_dht_read.c", "source/Orange_Pi/op_mmio.c"],
+                                ["source/_Orange_Pi_Driver.c", "source/common_dht_read.c", "source/Orange_Pi/opi_dht_read.c", "source/Orange_Pi/opi_mmio.c"],
                                 libraries=['rt'],
                                 extra_compile_args=['-std=gnu99']))
 elif platform == 'TEST':
