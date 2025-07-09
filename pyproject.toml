@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Adafruit_DHT"
+version = "1.4.0"
+description = "Library to get readings from the DHT11, DHT22, and AM2302 humidity and temperature sensors on a Raspberry Pi, Beaglebone Black, or Orange Pi. Enhanced with gpiod support for Orange Pi Zero 2."
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {text = "MIT"}
+authors = [
+    {name = "Tony DiCola", email = "tdicola@adafruit.com"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Operating System :: POSIX :: Linux",
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development",
+    "Topic :: System :: Hardware",
+]
+requires-python = ">=3.7"
+dependencies = []
+
+[project.optional-dependencies]
+orange-pi = ["gpiod>=1.5.0"]
+
+[project.urls]
+Homepage = "https://github.com/adafruit/Adafruit_Python_DHT/"
+Repository = "https://github.com/adafruit/Adafruit_Python_DHT/"
+
+[tool.setuptools]
+packages = ["Adafruit_DHT"]

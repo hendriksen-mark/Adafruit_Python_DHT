@@ -1,5 +1,4 @@
-from setuptools import setup, find_packages, Extension
-import os
+from setuptools import setup, Extension
 import sys
 
 import Adafruit_DHT.platform_detect as platform_detect
@@ -20,10 +19,6 @@ BINARY_COMMANDS = [
 def is_binary_install():
     do_binary = [command for command in BINARY_COMMANDS if command in sys.argv]
     return len(do_binary) > 0
-
-
-def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 # Check if an explicit platform was chosen with a command line parameter.
 # Kind of hacky to manipulate the argument list before calling setup, but it's
@@ -93,32 +88,6 @@ else:
     print('Could not detect if running on the Raspberry Pi, Beaglebone Black or Orange Pi. If this failure is unexpected, you can run again with --force-pi, --force-bbb or --force-opi parameter to force using the Raspberry Pi, Beaglebone Black or Orange Pi respectively.')
     sys.exit(1)
 
-classifiers = ['Development Status :: 4 - Beta',
-               'Operating System :: POSIX :: Linux',
-               'License :: OSI Approved :: MIT License',
-               'Intended Audience :: Developers',
-               'Programming Language :: Python :: 2.7',
-               'Programming Language :: Python :: 3',
-               'Topic :: Software Development',
-               'Topic :: System :: Hardware']
-
-# Determine install requirements based on platform
-install_requires = []
-
-# Add platform-specific dependencies
-if platform == platform_detect.ORANGE_PI:
-    install_requires.append('gpiod>=1.5.0')  # Required for Orange Pi GPIO control
-
 # Call setuptools setup function to install package.
-setup(name              = 'Adafruit_DHT',
-      version           = '1.4.0',
-      author            = 'Tony DiCola',
-      author_email      = 'tdicola@adafruit.com',
-      description       = 'Library to get readings from the DHT11, DHT22, and AM2302 humidity and temperature sensors on a Raspberry Pi, Beaglebone Black, or Orange Pi. Enhanced with gpiod support for Orange Pi Zero 2.',
-      long_description  = read('README.md'),
-      license           = 'MIT',
-      classifiers       = classifiers,
-      url               = 'https://github.com/adafruit/Adafruit_Python_DHT/',
-      packages          = find_packages(),
-      install_requires  = install_requires,
-      ext_modules       = extensions)
+# Most metadata is now in pyproject.toml, setup.py only handles extensions
+setup(ext_modules=extensions)
