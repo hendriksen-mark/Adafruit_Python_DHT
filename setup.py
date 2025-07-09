@@ -2,7 +2,28 @@ from setuptools import setup, Extension
 import sys
 import os
 
-import Adafruit_DHT.platform_detect as platform_detect
+# Try to import platform_detect, but handle the case where it's not available during build
+try:
+    import Adafruit_DHT.platform_detect as platform_detect
+except ImportError:
+    # During build, the package might not be available yet
+    # Define constants locally
+    class PlatformDetect:
+        UNKNOWN = 0
+        RASPBERRY_PI = 1
+        BEAGLEBONE_BLACK = 2
+        ORANGE_PI = 3
+        
+        @staticmethod
+        def platform_detect():
+            # Default to unknown during build - will be overridden by env var or flags
+            return PlatformDetect.UNKNOWN
+            
+        @staticmethod
+        def pi_version():
+            return 2  # Default to Pi 2 driver for compatibility
+    
+    platform_detect = PlatformDetect()
 
 
 BINARY_COMMANDS = [
@@ -61,7 +82,12 @@ elif '--force-test' in sys.argv:
     sys.argv.remove('--force-test')
 else:
     # No explicit platform chosen, detect the current platform.
-    platform = platform_detect.platform_detect()
+    try:
+        platform = platform_detect.platform_detect()
+    except Exception as e:
+        # If platform detection fails during build, default to unknown
+        print(f"Platform detection failed: {e}")
+        platform = platform_detect.UNKNOWN
 
 # Pick the right extension to compile based on the platform.
 extensions = []
@@ -102,8 +128,19 @@ elif platform == 'TEST':
                                 ["source/_Test_Driver.c", "source/Test/test_dht_read.c"],
                                 extra_compile_args=['-std=gnu99']))
 else:
-    print('Could not detect if running on the Raspberry Pi, Beaglebone Black or Orange Pi. If this failure is unexpected, you can run again with --force-pi, --force-bbb or --force-opi parameter to force using the Raspberry Pi, Beaglebone Black or Orange Pi respectively.')
-    sys.exit(1)
+    if platform == platform_detect.UNKNOWN:
+        print('Could not detect platform. For testing or cross-compilation, set ADAFRUIT_DHT_FORCE_PLATFORM environment variable or use --force-* flags.')
+        print('Available options:')
+        print('  ADAFRUIT_DHT_FORCE_PLATFORM=test (for testing)')
+        print('  ADAFRUIT_DHT_FORCE_PLATFORM=pi (for Raspberry Pi)')
+        print('  ADAFRUIT_DHT_FORCE_PLATFORM=pi2 (for Raspberry Pi 2+)')
+        print('  ADAFRUIT_DHT_FORCE_PLATFORM=bbb (for Beaglebone Black)')
+        print('  ADAFRUIT_DHT_FORCE_PLATFORM=opi (for Orange Pi)')
+        # Don't exit during build - just skip extensions
+        print('Continuing without platform-specific extensions...')
+    else:
+        print('Could not detect if running on the Raspberry Pi, Beaglebone Black or Orange Pi. If this failure is unexpected, you can run again with --force-pi, --force-bbb or --force-opi parameter to force using the Raspberry Pi, Beaglebone Black or Orange Pi respectively.')
+        sys.exit(1)
 
 # Call setuptools setup function to install package.
 # Most metadata is now in pyproject.toml, setup.py only handles extensions
