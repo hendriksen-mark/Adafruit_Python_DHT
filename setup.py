@@ -1,5 +1,6 @@
 from setuptools import setup, Extension
 import sys
+import os
 
 import Adafruit_DHT.platform_detect as platform_detect
 
@@ -20,12 +21,28 @@ def is_binary_install():
     do_binary = [command for command in BINARY_COMMANDS if command in sys.argv]
     return len(do_binary) > 0
 
-# Check if an explicit platform was chosen with a command line parameter.
+# Check if an explicit platform was chosen with a command line parameter or environment variable.
 # Kind of hacky to manipulate the argument list before calling setup, but it's
 # the best simple option for adding optional config to the setup.
 platform = platform_detect.UNKNOWN
 pi_version = None
-if '--force-pi' in sys.argv:
+
+# Check environment variables first (more modern approach)
+force_platform = os.environ.get('ADAFRUIT_DHT_FORCE_PLATFORM', '').lower()
+if force_platform == 'pi':
+    platform = platform_detect.RASPBERRY_PI
+    pi_version = 1
+elif force_platform == 'pi2':
+    platform = platform_detect.RASPBERRY_PI
+    pi_version = 2
+elif force_platform == 'bbb':
+    platform = platform_detect.BEAGLEBONE_BLACK
+elif force_platform == 'opi':
+    platform = platform_detect.ORANGE_PI
+elif force_platform == 'test':
+    platform = 'TEST'
+# Then check command line arguments (legacy support)
+elif '--force-pi' in sys.argv:
     platform = platform_detect.RASPBERRY_PI
     pi_version = 1
     sys.argv.remove('--force-pi')
