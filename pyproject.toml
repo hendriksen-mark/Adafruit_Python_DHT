@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "adafruit-dht"
-version = "1.4.0"
-description = "Library to get readings from the DHT11, DHT22, and AM2302 humidity and temperature sensors on a Raspberry Pi, Beaglebone Black, or Orange Pi. Enhanced with gpiod support for Orange Pi Zero 2."
+version = "1.4.1"
+description = "Library to get readings from the DHT11, DHT22, and AM2302 humidity and temperature sensors on a Raspberry Pi, Beaglebone Black, or Orange Pi."
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {text = "MIT"}
 authors = [

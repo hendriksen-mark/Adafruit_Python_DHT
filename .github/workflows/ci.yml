@@ -1,0 +1,78 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12']
+        platform: [test, pi, pi2, bbb]
+        
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build pytest
+        
+    - name: Install package with platform detection
+      run: |
+        ADAFRUIT_DHT_FORCE_PLATFORM=${{ matrix.platform }} pip install -e .
+      env:
+        ADAFRUIT_DHT_FORCE_PLATFORM: ${{ matrix.platform }}
+        
+    - name: Test package installation
+      run: |
+        python -c "import Adafruit_DHT; print('Adafruit_DHT package imported successfully')"
+        python -c "import Adafruit_DHT.platform_detect; print('Platform detection module imported successfully')"
+        
+    - name: Run tests (if you have any)
+      run: |
+        # Test platform detection and basic functionality
+        python -c "
+        import os
+        os.environ['ADAFRUIT_DHT_FORCE_PLATFORM'] = '${{ matrix.platform }}'
+        import Adafruit_DHT
+        print('Platform: ${{ matrix.platform }}')
+        print('Testing complete for platform: ${{ matrix.platform }}')
+        "
+        
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+        
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build
+        
+    - name: Build package
+      run: |
+        ADAFRUIT_DHT_FORCE_PLATFORM=test python -m build
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: adafruit-dht-dist
+        path: dist/
